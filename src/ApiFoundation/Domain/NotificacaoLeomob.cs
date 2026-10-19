@@ -16,4 +16,19 @@ public class NotificacaoLeomob
     public string? UltimoErro { get; set; }
     public DateTime DataCriacao { get; set; }
     public DateTime DataAtualizacao { get; set; }
+
+    public void RegistrarSucesso()
+    {
+        Status = StatusNotificacao.CONCLUIDO;
+        DataAtualizacao = DateTime.UtcNow;
+    }
+
+    /// <summary>Conta a falha e decide: tenta de novo depois (PENDENTE) ou desiste (FALHA).</summary>
+    public void RegistrarFalha(string erro)
+    {
+        Tentativas++;
+        UltimoErro = erro;
+        Status = Tentativas >= MaxTentativas ? StatusNotificacao.FALHA : StatusNotificacao.PENDENTE;
+        DataAtualizacao = DateTime.UtcNow;
+    }
 }
