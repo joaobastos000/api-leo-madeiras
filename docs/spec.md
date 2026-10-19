@@ -193,7 +193,32 @@ Contagem de tentativas: a chamada inicial no `POST` é a tentativa 1. Portanto: 
 
 Os testes usam fakes próprios que contam chamadas, injetados no lugar dos de produção.
 
-## 9. Tratamento de erros e logs
+## 9. Injeção de dependência
+
+Todas as dependências chegam pelo construtor. Os registros ficam no `Program.cs`, num bloco só:
+
+| Serviço | Implementação | Tempo de vida | Por quê |
+|---|---|---|---|
+| `AppDbContext` | — (`AddDbContext` + `UseNpgsql`) | Scoped | Um contexto por requisição; o DbContext não é thread-safe |
+| `ProcessadorArquivosProducao` | classe concreta | Scoped | Depende do `AppDbContext` (Scoped) |
+| `ReprocessadorNotificacoes` | classe concreta | Scoped | Idem |
+| `IArmazenamentoArquivos` | `ArmazenamentoArquivosFake` | Singleton | Guarda a lista de cópias durante toda a vida da aplicação |
+| `ILeomobApiClient` | `LeomobApiClientFake` | Singleton | Mantém o contador do modo `Alternado` entre requisições (incremento com `Interlocked`) |
+| `ReprocessamentoBackgroundService` | `AddHostedService` | Singleton | A cada ciclo cria um escopo com `IServiceScopeFactory` para obter o `ReprocessadorNotificacoes`, evitando prender um Scoped dentro de um Singleton |
+| `GlobalExceptionHandler` | `AddExceptionHandler` | Singleton | Não guarda estado |
+| `LeomobOptions`, `ReprocessamentoOptions` | `Configure<T>` (seções `Leomob` e `Reprocessamento`) | — | Lidas via `IOptions<T>`, em vez de ler `IConfiguration` direto |
+
+Onde usar interface:
+
+- **Sim**, nas fronteiras com sistemas externos (`IArmazenamentoArquivos`, `ILeomobApiClient`): é ali que a implementação muda (fake hoje, cliente HTTP amanhã, stub nos testes).
+- **Não**, nos serviços de negócio: existe uma implementação só, e os testes usam a classe real com banco real. Interface sem segunda implementação seria cerimônia.
+
+Nos testes:
+
+- Testes de serviço: os objetos são montados à mão (`new ProcessadorArquivosProducao(db, armazenamentoFake, leomobFake, logger)`), o que deixa explícito o que cada teste controla.
+- Testes de integração: `WebApplicationFactory` com `ConfigureTestServices`, trocando `ILeomobApiClient` e `IArmazenamentoArquivos` pelos fakes de teste e a connection string pela do container.
+
+## 10. Tratamento de erros e logs
 
 - `AddProblemDetails()` + `UseExceptionHandler()` + `GlobalExceptionHandler : IExceptionHandler`.
 - O handler loga a exceção e responde:
@@ -201,7 +226,7 @@ Os testes usam fakes próprios que contam chamadas, injetados no lugar dos de pr
   - qualquer outra → **500** com `traceId`, sem detalhes internos.
 - Logs em JSON no console, com escopos. Cada serviço processado e cada notificação reprocessada leva `PedidoSVL` (e `ServiceId` quando houver) no escopo.
 
-## 10. Configuração e execução
+## 11. Configuração e execução
 
 - Connection string em `ConnectionStrings:Default`.
 - Migrations aplicadas na subida (`Database.Migrate()`).
@@ -210,7 +235,7 @@ Os testes usam fakes próprios que contam chamadas, injetados no lugar dos de pr
 - Desenvolvimento: `docker compose up db` + `dotnet run --project src/ApiFoundation`.
 - Testes: `dotnet test` (exige Docker rodando, por causa do Testcontainers).
 
-## 11. Testes
+## 12. Testes
 
 Um container Postgres por execução (fixture de coleção do xUnit); cada teste parte de um banco limpo com o seed.
 
@@ -229,7 +254,7 @@ Extras (integração via `WebApplicationFactory`, ponta a ponta pelo HTTP):
 - `hasErrors: true` → 422 e nada gravado;
 - `serviceId` divergente → 200 com erro naquele serviço.
 
-## 12. RESPOSTAS.md (Partes 1, 3 e 4)
+## 13. RESPOSTAS.md (Partes 1, 3 e 4)
 
 Escritas lado a lado: rascunho conjunto, revisão final com as palavras do autor.
 
@@ -237,7 +262,7 @@ Escritas lado a lado: rascunho conjunto, revisão final com as palavras do autor
 - **Parte 3:** lista de problemas com impacto e severidade, método reescrito e análise da notificação duplicada.
 - **Parte 4:** consultas no dialeto PostgreSQL, com nota sobre diferenças em SQL Server (o DDL do enunciado usa `DATETIME`). Índice único em `PedidoSVL` e índices para a consulta dos pedidos "travados".
 
-## 13. Premissas (vão para o README)
+## 14. Premissas (vão para o README)
 
 1. `hasErrors: true` rejeita o envio inteiro com 422.
 2. Resposta 200 mesmo com falhas parciais; o detalhe vai em `resultados`.
@@ -249,7 +274,7 @@ Escritas lado a lado: rascunho conjunto, revisão final com as palavras do autor
 8. O status do `Pedido` não muda ao receber arquivos.
 9. Sem autenticação: o enunciado não pede.
 
-## 14. Fora do escopo (vai para "o que eu faria com mais tempo")
+## 15. Fora do escopo (vai para "o que eu faria com mais tempo")
 
 - Autenticação entre Digibee e API Foundation (token ou mTLS).
 - Clientes HTTP reais com Polly (retry com backoff e circuit breaker).
