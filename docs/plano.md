@@ -10,6 +10,13 @@
 
 **Spec:** `docs/spec.md`
 
+## Fluxo de trabalho
+
+- O Claude implementa **uma tarefa por vez**: escreve os testes, implementa, roda `dotnet test` e **para** com um resumo do que mudou e de como funciona.
+- O autor revisa o código e faz o commit. Os passos "Commit" deste plano são **mensagens sugeridas**; quando um passo sugere dois commits, o resumo do Claude indica quais arquivos vão em cada um.
+- O Claude **não roda** `git commit`, `merge` nem `push`. Comandos git do plano (branches na Tarefa 1, merge e publicação na Tarefa 11) ficam com o autor.
+- A próxima tarefa só começa depois do commit da anterior.
+
 ## Restrições globais
 
 - Target `net8.0`. Pacotes EF Core, Npgsql.EntityFrameworkCore.PostgreSQL, Microsoft.EntityFrameworkCore.Design e Microsoft.AspNetCore.Mvc.Testing na última versão `8.0.x`. Ferramenta local `dotnet-ef` `8.0.x`.
