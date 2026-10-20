@@ -27,8 +27,6 @@ Critério de sucesso: as 7 regras de negócio funcionam (incluindo ZMOB e idempo
 | Logs | `ILogger` nativo, `AddJsonConsole` com `IncludeScopes = true` |
 | Container | Dockerfile multi-stage + `docker-compose.yml` (api + postgres) |
 
-Sem Moq, FluentAssertions ou Serilog: fakes escritos à mão e asserts do xUnit são mais fáceis de explicar.
-
 ## 3. Arquitetura
 
 Um projeto de API em camadas por pasta, mais um projeto de testes.
@@ -202,6 +200,7 @@ Todas as dependências chegam pelo construtor. Os registros ficam no `Program.cs
 | `AppDbContext` | — (`AddDbContext` + `UseNpgsql`) | Scoped | Um contexto por requisição; o DbContext não é thread-safe |
 | `ProcessadorArquivosProducao` | classe concreta | Scoped | Depende do `AppDbContext` (Scoped) |
 | `ReprocessadorNotificacoes` | classe concreta | Scoped | Idem |
+| `ConsultaPedidos` | classe concreta | Scoped | Idem (monta a resposta do GET) |
 | `IArmazenamentoArquivos` | `ArmazenamentoArquivosFake` | Singleton | Guarda a lista de cópias durante toda a vida da aplicação |
 | `ILeomobApiClient` | `LeomobApiClientFake` | Singleton | Mantém o contador do modo `Alternado` entre requisições (incremento com `Interlocked`) |
 | `ReprocessamentoBackgroundService` | `AddHostedService` | Singleton | A cada ciclo cria um escopo com `IServiceScopeFactory` para obter o `ReprocessadorNotificacoes`, evitando prender um Scoped dentro de um Singleton |
