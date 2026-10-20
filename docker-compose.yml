@@ -7,7 +7,8 @@ services:
       POSTGRES_PASSWORD: leo
       POSTGRES_DB: apifoundation
     ports:
-      - "5432:5432"
+      # 5434 no host: evita conflito com outro PostgreSQL já rodando na máquina (porta padrão 5432).
+      - "5434:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U leo -d apifoundation"]
       interval: 5s
