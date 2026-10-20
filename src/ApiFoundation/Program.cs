@@ -24,6 +24,10 @@ builder.Services.Configure<LeomobOptions>(builder.Configuration.GetSection("Leom
 builder.Services.AddSingleton<IArmazenamentoArquivos, ArmazenamentoArquivosFake>();
 builder.Services.AddSingleton<ILeomobApiClient, LeomobApiClientFake>();
 
+// Reprocessamento automático das notificações PENDENTE em segundo plano
+builder.Services.Configure<ReprocessamentoOptions>(builder.Configuration.GetSection("Reprocessamento"));
+builder.Services.AddHostedService<ReprocessamentoBackgroundService>();
+
 // HTTP
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
