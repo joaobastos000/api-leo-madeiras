@@ -37,11 +37,8 @@ public class ProcessadorArquivosProducao(
         var pedidoSVL = servico.PedidoSVL!.Value;
         var serviceId = servico.ServiceId!.Value;
 
-        using var _ = logger.BeginScope(new Dictionary<string, object>
-        {
-            ["PedidoSVL"] = pedidoSVL,
-            ["ServiceId"] = serviceId
-        });
+        // Todo log dentro deste serviço sai com PedidoSVL e ServiceId, para rastrear o pedido.
+        using var _ = logger.BeginScope("Pedido {PedidoSVL}, serviço {ServiceId}", pedidoSVL, serviceId);
 
         var pedido = await db.Pedidos
             .Include(p => p.Links)

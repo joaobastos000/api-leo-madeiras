@@ -27,11 +27,7 @@ public class ReprocessadorNotificacoes(
         foreach (var notificacao in pendentes)
         {
             var pedido = notificacao.Pedido;
-            using var _ = logger.BeginScope(new Dictionary<string, object>
-            {
-                ["PedidoSVL"] = pedido.PedidoSVL,
-                ["ServiceId"] = pedido.ServiceId
-            });
+            using var _ = logger.BeginScope("Pedido {PedidoSVL}, serviço {ServiceId}", pedido.PedidoSVL, pedido.ServiceId);
 
             try
             {
